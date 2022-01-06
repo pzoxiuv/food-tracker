@@ -3,7 +3,7 @@
 		<meta charset="utf-8">
 
 		<link href="https://tofsjonas.github.io/sortable/sortable.css" rel="stylesheet" />
-		<script src="sortable.js"></script>
+		<script type="text/javascript" src="food/sortable.js"></script>
 	</head>
 	<body>
 
@@ -64,7 +64,7 @@
 				var rowData = {};
 				for (var k = 0, col; col = table.rows[1].cells[k]; k++) {
 					if (col.firstChild) {
-						rowData[keys[k]] = col.firstChild.value;
+						rowData[keys[k]] = col.firstChild.value.replaceAll("$", "").trim();
 						col.firstChild.value='';
 					}
 				}
@@ -73,14 +73,14 @@
 			for (var i = 2, row; row = table.rows[i]; i++) {
 				var rowData = {};
 				for (var j = 0, col; col = row.cells[j]; j++) {
-					rowData[keys[j]] = col.textContent;
+					rowData[keys[j]] = col.textContent.replaceAll("$", "").trim();
 				}
 				tableData.push(rowData);
 			}
 			console.log(tableData);
 
 			var xhr = new XMLHttpRequest();
-			xhr.open("POST", "/send-data", true);
+			xhr.open("POST", "/food/send-data", true);
 			xhr.setRequestHeader('Content-Type', 'application/json');
 			xhr.send(JSON.stringify(tableData));
 
@@ -96,7 +96,7 @@
 					buildTable(xmlHttp.responseText);
 				}
 			}
-			xmlHttp.open("GET", "/get-data", true);
+			xmlHttp.open("GET", "/food/get-data", true);
 			xmlHttp.send(null);
 		}
 
@@ -131,7 +131,7 @@
 				total_protein = parseFloat(data[i]["protein per serving"], 10) * parseFloat(data[i]["servings per container"], 10);
 				console.log(total_protein);
 				console.log(parseFloat(data[i]["price"], 10))
-				list += total_protein/parseFloat(data[i]["price"], 10);
+				list += (total_protein/parseFloat(data[i]["price"], 10)).toFixed(2);
 				list += "</td>";
 				list += "</tr>\n";
 			}

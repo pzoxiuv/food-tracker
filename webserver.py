@@ -52,8 +52,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
         print(f'GET request,\nPath: {self.path}\nHeaders:\n{self.headers}\n')
 
         path = parse.urlsplit(self.path)
-        if path.path.startswith('/protein'):
-            p = path.path.lstrip('/protein')
+        if path.path.startswith('/food'):
+            p = path.path.lstrip('/food')
         else:
             p = path.path
         if p == '':
@@ -61,12 +61,17 @@ class HTTPHandler(BaseHTTPRequestHandler):
         print(path)
         print(p)
 
-        if p == '/':
+        if path.netloc == '' and p == '/':
             self._set_response(fname='protein.html')
             with open('protein.html') as f:
                 self.wfile.write(f.read().encode('utf-8'))
 
-        elif p == '/get-data':
+        elif os.path.exists(path.netloc) and os.path.isfile(path.netloc):
+            self._set_response(fname=path.netloc)
+            with open(path.netloc) as f:
+                self.wfile.write(f.read().encode('utf-8'))
+
+        elif path.netloc == 'get-data':
             with open(self.protein_file) as f:
                 reader = csv.DictReader(f)
                 data = [r for r in reader]
