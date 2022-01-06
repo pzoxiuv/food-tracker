@@ -1,0 +1,154 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+
+		<link href="https://tofsjonas.github.io/sortable/sortable.css" rel="stylesheet" />
+		<script src="sortable.js"></script>
+	</head>
+	<body>
+
+		<div id="list">
+		</div>
+
+	</body>
+
+	<script>
+		window.onload = get_data()
+
+		let delayId;
+
+		document.getElementById("list").addEventListener("input", function() {
+			//console.log("input event fired on list");
+			if (delayId) {
+				clearInterval(delayId);
+			}
+			delayId = setInterval(sendUpdatedTable, 3000, false);
+		}, false);
+		document.getElementById("list").addEventListener("keyup", function() {
+			//console.log("keyup event fired");
+		}, false);
+
+		function inputRowDone() {
+			for (var i = 0, col; col = document.getElementById("table").rows[1].cells[i]; i++) {
+				if (col.firstChild) {
+					if (col.firstChild.value.length == 0) {
+						return false;
+					}
+				}
+			}
+
+			return true;
+		}
+
+		function sendUpdatedTable(fromInputRow) {
+			if (delayId) {
+				clearInterval(delayId);
+			}
+			delayId = null;
+
+			console.log(fromInputRow);
+			if (fromInputRow) {
+				if (!inputRowDone()) {
+					console.log("input row not done, not submitting new table");
+					return;
+				}
+			}
+
+			var table = document.getElementById("table");
+			var tableData = [];
+			var keys = [];
+			for (var k = 0, col; col = table.rows[0].cells[k]; k++) {
+				keys.push(col.textContent.toLowerCase());
+			}
+			if (fromInputRow) {
+				var rowData = {};
+				for (var k = 0, col; col = table.rows[1].cells[k]; k++) {
+					if (col.firstChild) {
+						rowData[keys[k]] = col.firstChild.value;
+						col.firstChild.value='';
+					}
+				}
+				tableData.push(rowData);
+			}
+			for (var i = 2, row; row = table.rows[i]; i++) {
+				var rowData = {};
+				for (var j = 0, col; col = row.cells[j]; j++) {
+					rowData[keys[j]] = col.textContent;
+				}
+				tableData.push(rowData);
+			}
+			console.log(tableData);
+
+			var xhr = new XMLHttpRequest();
+			xhr.open("POST", "/send-data", true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.send(JSON.stringify(tableData));
+
+			if (fromInputRow) {
+				buildTable(JSON.stringify(tableData));
+			}
+		}
+
+		function get_data() {
+			var xmlHttp = new XMLHttpRequest();
+			xmlHttp.onreadystatechange = function() {
+				if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+					buildTable(xmlHttp.responseText);
+				}
+			}
+			xmlHttp.open("GET", "/get-data", true);
+			xmlHttp.send(null);
+		}
+
+		function buildTable(text) {
+			data = JSON.parse(text);
+			console.log(data);
+
+			var list = "<table id=\"table\" class=\"sortable\">\n";
+			list += "<thead><tr><th>Name</th><th>Protein Per Serving</th><th>Servings Per Container</th><th>Price</th><th>Protein per dollar</th></thead><tbody>";
+			list += "<tr id=\"input-row\">"
+			list += "<td><input type=\"text\" id=\"name\" name=\"name\" minlength=\"4\" maxlength=\"80\" size=\"10\"></td>";
+			list += "<td><input id=\"protein per serving\" type=\"number\" name=\"pps\" step=\".5\"></td>";
+			list += "<td><input id=\"servings per container\" type=\"number\" name=\"spc\" step=\".5\"></td>";
+			list += "<td><input id=\"price\" type=\"number\" name=\"price\"></td>";
+			list += "<td></td>"
+			list += "</tr>";
+			for (var i=0; i < data.length; i++) {
+				list += "<tr contenteditable>";
+				list += "<td>";
+				list += data[i]["name"];
+				list += "</td>";
+				list += "<td>";
+				list += data[i]["protein per serving"];
+				list += "</td>";
+				list += "<td>";
+				list += data[i]["servings per container"];
+				list += "</td>";
+				list += "<td>";
+				list += data[i]["price"];
+				list += "</td>";
+				list += "<td>";
+				total_protein = parseFloat(data[i]["protein per serving"], 10) * parseFloat(data[i]["servings per container"], 10);
+				console.log(total_protein);
+				console.log(parseFloat(data[i]["price"], 10))
+				list += total_protein/parseFloat(data[i]["price"], 10);
+				list += "</td>";
+				list += "</tr>\n";
+			}
+			list += "</tbody></table>";
+			document.getElementById("list").innerHTML = list;
+
+			document.getElementById("input-row").addEventListener("input", function() {
+				//console.log("input event fired on input row");
+				if (delayId) {
+					clearInterval(delayId);
+				}
+				delayId = setInterval(sendUpdatedTable, 3000, true);
+				event.stopPropagation();
+			}, false);
+			document.getElementById("input-row").addEventListener("keyup", function() {
+				//console.log("keyup event fired on input row");
+			}, false);
+		}
+	</script>
+</html>
